@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"mime"
@@ -10,10 +11,12 @@ import (
 )
 
 var (
-	src       string
-	dest      string
-	retro     bool
-	grayscale bool
+	src            string
+	dest           string
+	grayscale      bool
+	sampleInterval int
+	dotSize        int
+	whiteNoise     bool
 )
 
 type FileType int
@@ -23,16 +26,26 @@ const (
 	Video
 )
 
+// parses and validates the flags
 func ParseFlags() {
-	// TODO add a sampling rate flag 
+	// TODO add a sampling rate flag
+	// todo add dot size flag
+	// todo add background flag
 	flag.StringVar(&src, "src", "",
 		`Source image or video to be converted. *mandatory*
 Currently supports most image formats and mp4 for video sources`,
 	)
 
-	flag.BoolVar(&retro, "retro", false, "Applies a *retro* aesthetic to the video by stalling the frames")
-	help := flag.Bool("help", false, "List all commands")
-	flag.BoolVar(&grayscale, "grayscale", false, "Decides whether the result should be grayscale (black&white) or preserve the original colors of the image")
+	help := flag.Bool("help", false, "Lists all commands")
+	flag.BoolVar(&grayscale, "grayscale", false, "Decides whether the result should be grayscale (black & white) or preserve the original colors of the image")
+	flag.IntVar(&dotSize, "dot-size", 4, "the upper bound for the dot size")
+	flag.BoolVar(&whiteNoise, "white-noise", false, "uhm.. white noise")
+
+	flag.IntVar(&sampleInterval, "sample-interval", 5,
+		`Sampling rate for the given image or video
+Dictates how many pixels are going to be read
+Essentially corresponds to the gap or noise size (higher sampling rate, less dots or info to represent the image, larger gaps)
+`)
 
 	var defaultDest string
 	homeDir, err := os.UserHomeDir()
@@ -57,19 +70,32 @@ Currently supports most image formats and mp4 for video sources`,
 		log.Fatalf("\"--source\" must be specified")
 	}
 
-	SourceType()
+	_, err = SourceType()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	destInfo, err := os.Stat(dest)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !destInfo.IsDir() {
+		log.Fatalf("%q has to be a directory", dest)
+	}
 }
 
-func Src() string {
+func Source() string {
 	return src
 }
 
-func Dest() string {
-	// TODO assert Dest is a directory
+func Destination() string {
 	return dest
 }
 
-func SourceType() FileType {
+func SourceType() (FileType, error) {
 	info, err := os.Stat(src)
 
 	if err != nil {
@@ -80,19 +106,26 @@ func SourceType() FileType {
 
 	switch mt := mime.TypeByExtension(filepath.Ext(src)); {
 	case strings.HasPrefix(mt, "image/"):
-		return Image
+		return Image, nil
 	case strings.HasPrefix(mt, "video/"):
-		return Video
+		return Video, nil
 	default:
-		log.Fatal("Unsupported source type")
-		return -1
+		return -1, errors.New("unsupported file type.\nSource file has to be either an image or a video")
 	}
-}
-
-func Retro() bool {
-	return retro
 }
 
 func Grayscale() bool {
 	return grayscale
+}
+
+func SampleInterval() int {
+	return sampleInterval
+}
+
+func DotSize() int {
+	return dotSize
+}
+
+func WhiteNoise() bool {
+	return whiteNoise
 }

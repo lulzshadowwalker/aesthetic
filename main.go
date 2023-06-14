@@ -8,8 +8,9 @@ import (
 func main() {
 	config.ParseFlags()
 
-	if st := config.SourceType(); st == config.Image {
-		aesthetic.ConvertImage(config.Src(), config.Dest())
+	if st, _ := config.SourceType(); st == config.Image {
+		aesthetic.ConvertImage()
+	} else if st == config.Video {
+		aesthetic.ConvertVideo()
 	}
-
 }

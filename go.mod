@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/fogleman/gg v1.3.0
+	gocv.io/x/gocv v0.33.0
 )
 
 require (
